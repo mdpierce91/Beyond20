@@ -290,6 +290,13 @@ const options_list = {
         // callbacks will be added after the functions are defined
     },
 
+    "send-to-talespire": {
+        "title": "Send rolls to Talespire",
+        "description": "Send all rolls to a Talespire application.",
+        "type": "bool",
+        "default": false
+    },
+
     "discord-integration": {
         "title": "Discord Integration",
         "description": "You can get rolls sent to Discord by enabling Discord Integration!\n" +

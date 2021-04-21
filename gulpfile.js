@@ -19,6 +19,7 @@ const DNDBEYOND_PAGE_DEPS = [
     "src/dndbeyond/base/base.js",
     "src/dndbeyond/base/hotkeys.js",
     "src/dndbeyond/base/utils.js",
+    "src/talespire/content-script.js",
 ];
 
 const SRC_FILES = {

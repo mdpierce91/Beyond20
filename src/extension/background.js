@@ -108,6 +108,32 @@ function sendMessageToFVTT(request, limit, failure = null) {
     }
 }
 
+function sendMessageToTaleSpire(request, sendToTalespire = null, failure = null) {
+    console.log("Sending msg to Talespire ", fvtt_tabs)
+    if (sendToTalespire) {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs.length > 0) {
+                console.log(`Sending to the open tab.`);
+                // let requestWrapper = { target: 'talespire', request};
+                // chrome.tabs.sendMessage(tabs[0].id, requestWrapper)
+
+                // Only send supported Talespire Features.
+                if (["feature", "trait", "action", "spell-card", "chat-message"].includes(request.type)) {
+                    failure(true);
+                }
+                else {
+                    chrome.tabs.sendMessage(tabs[0].id, request);
+                    if (failure)
+                        failure(false);
+                }
+            }
+        })
+    } else {
+        console.log('Talespire rolling is not enabled.');
+        failure(true);
+    }
+}
+
 function sendMessageToBeyond(request) {
     sendMessageTo(DNDBEYOND_CHARACTER_URL, request)
     sendMessageTo(DNDBEYOND_MONSTER_URL, request)
@@ -182,8 +208,8 @@ function onMessage(request, sender, sendResponse) {
             return (result) => {
                 trackFailure[vtt] = result
                 console.log("Result of sending to VTT ", vtt, ": ", result)
-                if (trackFailure["roll20"] !== null && trackFailure["fvtt"] !== null && trackFailure["astral"] !== null) {
-                    if (trackFailure["roll20"] == true && trackFailure["fvtt"] == true && trackFailure["astral"] == true) {
+                if (trackFailure["roll20"] !== null && trackFailure["fvtt"] !== null && trackFailure["astral"] !== null && trackFailure["talespire"] !== null) {
+                    if (trackFailure["roll20"] == true && trackFailure["fvtt"] == true && trackFailure["astral"] == true && trackFailure["talespire"] == true) {
                         onRollFailure(request, sendResponse)
                     } else {
                         const vtts = []
@@ -197,13 +223,14 @@ function onMessage(request, sender, sendResponse) {
                 }
             }
         }
-        const trackFailure = { "roll20": null, "fvtt": null, 'astral': null }
+        const trackFailure = { "roll20": null, "fvtt": null, 'astral': null, "talespire": null }
         if (settings["vtt-tab"] && settings["vtt-tab"].vtt === "dndbeyond") {
             sendResponse({ "success": false, "vtt": "dndbeyond", "error": null, "request": request })
         } else {
             sendMessageToRoll20(request, settings["vtt-tab"], failure = makeFailureCB(trackFailure, "roll20", sendResponse))
             sendMessageToFVTT(request, settings["vtt-tab"], failure = makeFailureCB(trackFailure, "fvtt", sendResponse))
             sendMessageToAstral(request, settings["vtt-tab"], failure = makeFailureCB(trackFailure, "astral", sendResponse))
+            sendMessageToTaleSpire(request, settings["send-to-talespire"], failure = makeFailureCB(trackFailure, "talespire", sendResponse))
         }
         return true
     } else if (request.action == "settings") {
@@ -232,7 +259,7 @@ function onMessage(request, sender, sendResponse) {
     } else if (request.action == "get-current-tab") {
         sendResponse(sender.tab)
     } else if (request.action == "forward") {
-        chrome.tabs.sendMessage(request.tab, request.message, {frameId: 0}, sendResponse)
+        chrome.tabs.sendMessage(request.tab, request.message, { frameId: 0 }, sendResponse)
         return true
     }
     return false
